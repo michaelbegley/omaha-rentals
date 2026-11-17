@@ -208,6 +208,8 @@ input[type="range"] { min-height: var(--tap); accent-color: var(--accent); }
 }
 .star[aria-pressed="true"] { color: var(--star); border-color: var(--star); }
 
+.price { margin: 0 0 8px; font-size: 1rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.price .est { font-size: 0.82rem; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
 .badge {
   font-size: 0.75rem; font-weight: 650;

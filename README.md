@@ -32,10 +32,11 @@ Rules the page follows:
 - A record is also drawn as a **square** pin (for sale) if its `type` contains "sale" or it has `"for_sale": true`.
 - `listing_status` of `"gone"` shows "Listing gone as of" the `listing_checked_date`, the link reads "Open last known listing", and the place sorts after live ones. "Hide gone listings" (off by default) removes them.
 - Pins closer than 44 px on screen are drawn as one dark pin with a count. Tapping it opens a short chooser listing those places by name, with a "Zoom in to these" button.
-- Default sort is `area_rank` (Old Market first), then all-in cost per person.
+- Default sort is price: places with a listed monthly rent first, cheapest to priciest (`rent_low`, then `rent_high`), then places without a price. Gone listings always come last.
+- Each card shows its monthly rent in bold italics under the title, or "Price not confirmed".
 - Excluded places are hidden by default (tick "Excluded" under Tier to show them). The opening view and "Show all pins" fit only the places currently showing.
-- The cost slider's range comes from the places currently showing (after every other filter). Both ends are rounded up to whole dollars, so the lowest setting still includes the cheapest of them.
-- `picked_by` of `"M"`, `"G"` or `"both"` shows M and/or G tags.
+- The rent slider's range comes from the monthly rents of the places currently showing (after every other filter). Both ends are rounded up to whole dollars, so the lowest setting still includes the cheapest of them.
+- The page is written for anyone: it does not show `all_in_per_person`, `picked_by`, `office_note` or `missing_must_haves`. Those fields are still in `listings.json`, so anyone who opens that file can read them.
 - The "Prices checked on" date in the header is the newest `rent_checked_date` in the file. The opening date links to the first entry in `opening_date_sources`.
 - `listing_url` only becomes a link if it starts with `http://` or `https://`.
 

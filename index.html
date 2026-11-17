@@ -45,11 +45,11 @@
           </div>
 
           <div class="field">
-            <label for="f-cost">All-in cost: <output id="f-cost-out" for="f-cost">Any</output></label>
+            <label for="f-cost">Rent: <output id="f-cost-out" for="f-cost">Any</output></label>
             <input type="range" id="f-cost" min="0" max="0" step="1">
             <label class="check">
               <input type="checkbox" id="f-cost-unknown" checked>
-              <span>Include places where the all-in is not confirmed</span>
+              <span>Include places without a listed price</span>
             </label>
           </div>
 
@@ -86,15 +86,6 @@
             <input type="range" id="f-walk" min="0" max="0" step="1">
           </div>
 
-          <div class="field">
-            <label for="f-picked">Picked by</label>
-            <select id="f-picked">
-              <option value="">Anyone or no one</option>
-              <option value="M">M</option>
-              <option value="G">G</option>
-            </select>
-          </div>
-
           <div class="box-row">
             <label class="check">
               <input type="checkbox" id="f-laundry">
@@ -113,9 +104,9 @@
           <div class="field">
             <label for="f-sort">Sort by</label>
             <select id="f-sort">
-              <option value="area">Area (Old Market first), then cost</option>
+              <option value="price">Price, lowest first</option>
+              <option value="area">Area (Old Market first)</option>
               <option value="tier">Tier</option>
-              <option value="cost">All-in cost per person</option>
               <option value="walk">Walk time to a stop</option>
             </select>
           </div>

@@ -137,16 +137,15 @@
     return "unknown";
   }
   function hasInUnitLaundry(p) { return /^in-unit/i.test(String(p.laundry || "")); }
-  function pickedBy(p, who) {
-    var v = String(p.picked_by || "");
-    return v === who || v.toLowerCase() === "both";
+
+  // The listed monthly price: the low end of the rent, or the high end if only that is known.
+  // null when the listing gives no number.
+  function price(p) {
+    if (isNum(p.rent_low)) return p.rent_low;
+    if (isNum(p.rent_high)) return p.rent_high;
+    return null;
   }
-  function pickTags(p) {
-    var v = String(p.picked_by || "");
-    if (v.toLowerCase() === "both") return ["M", "G"];
-    if (v === "M" || v === "G") return [v];
-    return [];
-  }
+  function priceHigh(p) { return isNum(p.rent_high) ? p.rent_high : price(p); }
 
   /* ---------- load ---------- */
   function start() {
@@ -440,11 +439,10 @@
     $("f-parking").value = "";
     $("f-cat").value = "";
     $("f-walk").value = $("f-walk").max;
-    $("f-picked").value = "";
     $("f-laundry").checked = false;
     $("f-short").checked = false;
     $("f-gone").checked = false;
-    $("f-sort").value = "area";
+    $("f-sort").value = "price";
     apply();
     fitAll();
   }
@@ -462,7 +460,6 @@
       parking: $("f-parking").value,
       cat: $("f-cat").value,
       walkMax: Number(walk.value) >= Number(walk.max) ? null : Number(walk.value),
-      picked: $("f-picked").value,
       laundry: $("f-laundry").checked,
       shortOnly: $("f-short").checked,
       hideGone: $("f-gone").checked,
@@ -473,8 +470,8 @@
   function passes(p, f) {
     if (!f.tiers[tierKey(p)]) return false;
     if (f.area && p.area !== f.area) return false;
-    if (isNum(p.all_in_per_person)) {
-      if (f.costMax !== null && p.all_in_per_person > f.costMax) return false;
+    if (price(p) !== null) {
+      if (f.costMax !== null && price(p) > f.costMax) return false;
     } else if (!f.costUnknown) return false;
     if (f.lease !== null && !(isNum(p.shortest_lease_months) && p.shortest_lease_months <= f.lease)) return false;
     if (f.parking === "one" && !isNum(p.parking_cost_one)) return false;
@@ -482,7 +479,6 @@
     if (f.cat === "yes" && catStatus(p) !== "yes") return false;
     if (f.cat === "yes-likely" && catStatus(p) !== "yes" && catStatus(p) !== "likely") return false;
     if (f.walkMax !== null && !(isNum(p.walk_minutes) && p.walk_minutes <= f.walkMax)) return false;
-    if (f.picked && !pickedBy(p, f.picked)) return false;
     if (f.laundry && !hasInUnitLaundry(p)) return false;
     if (f.shortOnly && !state.shortlist[p.id]) return false;
     if (f.hideGone && isGone(p)) return false;
@@ -490,19 +486,26 @@
   }
 
   // Gone listings always sort after live ones, whatever the sort.
+  // "price" (the default): places with a listed price first, cheapest to priciest,
+  // then places without a price.
   function sorter(mode) {
     function numOr(v) { return isNum(v) ? v : Infinity; }
     function diff(x, y) { return x === y ? 0 : (x < y ? -1 : 1); }
+    function byPrice(a, b) {
+      return diff(price(a) === null ? 1 : 0, price(b) === null ? 1 : 0) ||
+        diff(numOr(price(a)), numOr(price(b))) ||
+        diff(numOr(priceHigh(a)), numOr(priceHigh(b)));
+    }
     return function (a, b) {
       var d = diff(isGone(a) ? 1 : 0, isGone(b) ? 1 : 0);
       if (d) return d;
-      if (mode === "cost") d = diff(numOr(a.all_in_per_person), numOr(b.all_in_per_person));
-      else if (mode === "walk") d = diff(numOr(a.walk_minutes), numOr(b.walk_minutes));
+      if (mode === "walk") d = diff(numOr(a.walk_minutes), numOr(b.walk_minutes));
       else if (mode === "tier") d = diff(tierRank(a), tierRank(b));
-      else d = diff(numOr(a.area_rank), numOr(b.area_rank)) || diff(numOr(a.all_in_per_person), numOr(b.all_in_per_person));
+      else if (mode === "area") d = diff(numOr(a.area_rank), numOr(b.area_rank));
+      else d = byPrice(a, b);
       return d ||
+        byPrice(a, b) ||
         diff(numOr(a.area_rank), numOr(b.area_rank)) ||
-        diff(numOr(a.all_in_per_person), numOr(b.all_in_per_person)) ||
         diff(tierRank(a), tierRank(b)) ||
         a.name.localeCompare(b.name);
     };
@@ -518,7 +521,7 @@
     var f = readFilters();
     f.costMax = null; f.costUnknown = true;
     var costs = state.places.filter(function (p) { return passes(p, f); })
-      .map(function (p) { return p.all_in_per_person; }).filter(isNum);
+      .map(price).filter(isNum);
     var cmin = costs.length ? Math.ceil(Math.min.apply(null, costs)) : 0;
     var cmax = costs.length ? Math.ceil(Math.max.apply(null, costs)) : 0;
     var keep = Number(cost.value);
@@ -535,7 +538,7 @@
     updateCostRange(e);
     var f = readFilters();
     var cost = $("f-cost");
-    var costText = f.costMax === null ? "Any" : "up to " + money(f.costMax) + " each (" + money(f.costMax * 2) + " combined)";
+    var costText = f.costMax === null ? "Any" : "up to " + money(f.costMax) + " a month";
     $("f-cost-out").textContent = costText;
     cost.setAttribute("aria-valuetext", costText);
     $("f-walk-out").textContent = f.walkMax === null ? "Any" : "up to " + f.walkMax + " min";
@@ -618,16 +621,26 @@
     top.appendChild(star);
     li.appendChild(top);
 
+    // Price, in bold italics, right under the title.
+    var pr = el("p", "price");
+    var strong = el("strong");
+    var em = el("em");
+    if (price(p) !== null) {
+      em.appendChild(rentNode(p));
+      em.appendChild(document.createTextNode(" a month"));
+    } else {
+      em.className = "nc";
+      em.appendChild(document.createTextNode("Price not confirmed"));
+    }
+    strong.appendChild(em);
+    pr.appendChild(strong);
+    if (sale) pr.appendChild(el("span", "est", " · " + EST_NOTE));
+    li.appendChild(pr);
+
     var badges = el("div", "badges");
     badges.appendChild(el("span", "badge tier " + tierClass(p), tierLabel(p)));
     if (sale && !isSaleTier(p)) badges.appendChild(el("span", "badge", "For sale"));
     badges.appendChild(el("span", "badge", areaLabel(p.area)));
-    pickTags(p).forEach(function (t) {
-      var b = el("span", "badge pick", t);
-      b.setAttribute("title", "Picked by " + t);
-      b.setAttribute("aria-label", "Picked by " + t);
-      badges.appendChild(b);
-    });
     li.appendChild(badges);
 
     if (gone) {
@@ -648,8 +661,6 @@
       { node: unitNode(p.baths, " bath"), value: p.baths, sep: " / " },
       { node: unitNode(p.sqft, " sq ft"), value: p.sqft }
     ]));
-    fact(dl, sale ? "Monthly" : "Rent", rentNode(p), sale ? el("span", "est", EST_NOTE) : null);
-    fact(dl, "All-in each", valueNode(p.all_in_per_person, money), sale ? el("span", "est", EST_NOTE) : null);
     fact(dl, "Lease", valueNode(p.lease_terms_offered));
     fact(dl, "Shortest", joinNodes([
       { value: p.shortest_lease_months, after: isNum(p.shortest_lease_months) ? " months" : "" },
@@ -665,13 +676,7 @@
       { value: p.walk_minutes, after: isNum(p.walk_minutes) ? " min walk" : "" },
       { label: "", value: p.nearest_stop, sep: " to " }
     ]), p.walk_method);
-    fact(dl, "Office", valueNode(p.office_note));
     li.appendChild(dl);
-
-    var miss = el("p", "missing");
-    miss.appendChild(el("strong", null, "Missing: "));
-    miss.appendChild(valueNode(p.missing_must_haves));
-    li.appendChild(miss);
 
     var foot = el("div", "card-foot");
     foot.appendChild(el("span", null, "Checked " + fmtDate(p.verified_date || p.rent_checked_date)));
