@@ -1,0 +1,314 @@
+/* Omaha rentals map: calm, system fonts, light and dark by device setting. */
+
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --text: #1c1c1e;
+  --muted: #6b6b70;
+  --line: #e2e2de;
+  --accent: #0a6e8a;
+  --focus: #0a6e8a;
+  --t1: #1f7a4d;
+  --t2: #a35c00;
+  --t3: #5b4fc4;
+  --tx: #7a7a80;
+  --route: #c2410c;
+  --ring5: rgba(194, 65, 12, 0.10);
+  --ring10: rgba(194, 65, 12, 0.05);
+  --hl: #fff7d6;
+  --star: #b7791f;
+  --ts: #8a3b63;
+  --group: #24242a;
+  --group-ring: #ffffff;
+  --gone: #8a4b00;
+  --radius: 12px;
+  --tap: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121214;
+    --surface: #1c1c1f;
+    --text: #ececef;
+    --muted: #a0a0a8;
+    --line: #2e2e33;
+    --accent: #5cc4e0;
+    --focus: #7fd6ee;
+    --t1: #2f9e66;
+    --t2: #c47a12;
+    --t3: #7b70e0;
+    --tx: #6d6d75;
+    --route: #fb923c;
+    --hl: #3a3420;
+    --star: #f0b54a;
+    --ts: #b85a8a;
+    --group: #f2f2f5;
+    --group-ring: #24242a;
+    --gone: #f0b54a;
+  }
+  /* Darken the OSM raster tiles. Attribution stays untouched. */
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9); }
+  .leaflet-container { background: #222; }
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.skip {
+  position: absolute; left: 8px; top: -60px;
+  background: var(--surface); color: var(--text);
+  padding: 10px 14px; border-radius: 8px; z-index: 2000;
+}
+.skip:focus { top: 8px; }
+
+/* Header */
+.site-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.site-head h1 { font-size: 1.15rem; margin: 0 0 2px; font-weight: 650; letter-spacing: -0.01em; }
+.site-head .lede { margin: 0 0 4px; }
+.site-head .meta { margin: 0; color: var(--muted); font-size: 0.875rem; }
+
+/* Layout: phone first. Map pinned at the top, cards scroll under it.
+   The list comes first in the page (and keyboard) order; CSS puts the map on top on phones. */
+.app { display: flex; flex-direction: column; }
+.app > .map-pane { order: -1; }
+
+.map-pane {
+  position: sticky; top: 0; z-index: 5;
+  height: 42vh; min-height: 260px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+#map { position: absolute; inset: 0; }
+
+.map-tools {
+  position: absolute; left: 8px; bottom: 22px; z-index: 900;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+
+.list-pane { padding: 12px 12px 32px; outline: none; }
+
+@media (min-width: 900px) {
+  body { height: 100vh; display: flex; flex-direction: column; }
+  .app {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: minmax(360px, 440px) 1fr;
+  }
+  .list-pane { order: 1; overflow-y: auto; border-right: 1px solid var(--line); }
+  .app > .map-pane { order: 2; position: relative; height: auto; border-bottom: 0; }
+}
+
+/* Controls */
+.chip, .btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: var(--tap); padding: 0 14px;
+  border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text);
+  font: inherit; font-size: 0.875rem; cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.btn { border-radius: 10px; box-shadow: none; }
+.chip input { width: 18px; height: 18px; margin: 0; }
+
+.filters {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); margin-bottom: 10px;
+}
+.filters summary {
+  min-height: var(--tap); padding: 0 14px;
+  display: flex; align-items: center;
+  font-weight: 600; cursor: pointer; list-style: none;
+}
+.filters summary::-webkit-details-marker { display: none; }
+.filters summary::after { content: "▾"; margin-left: auto; color: var(--muted); }
+.filters[open] summary::after { content: "▴"; }
+.filters form { padding: 4px 14px 14px; display: grid; gap: 12px; }
+
+fieldset { border: 0; margin: 0; padding: 0; }
+legend, .field > label:first-child { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; display: block; padding: 0; }
+
+.field select, .field input[type="range"] { width: 100%; }
+select {
+  min-height: var(--tap); font: inherit;
+  padding: 0 10px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text);
+}
+input[type="range"] { min-height: var(--tap); accent-color: var(--accent); }
+
+.box-row { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.check { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap); cursor: pointer; }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+
+.count { margin: 6px 2px 8px; font-weight: 600; }
+
+/* Legend */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 2px 12px; font-size: 0.8rem; color: var(--muted); }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.pin-demo {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  color: #fff; font-size: 11px; font-weight: 700;
+}
+.pin-demo.sale { border-radius: 3px; }
+.pin-demo.sale b { font-weight: 700; }
+.line-demo { width: 22px; height: 0; border-top: 3px dashed var(--route); }
+.pin-demo.group { background: var(--group); color: var(--surface); box-shadow: 0 0 0 2px var(--group-ring); }
+.t1 { background: var(--t1); }
+.t2 { background: var(--t2); }
+.t3 { background: var(--t3); }
+.tx { background: var(--tx); }
+.ts { background: var(--ts); }
+
+/* Empty state */
+.empty {
+  background: var(--surface); border: 1px dashed var(--line);
+  border-radius: var(--radius); padding: 16px; text-align: center;
+}
+.empty p { margin: 0 0 10px; }
+
+/* Cards */
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 12px 14px;
+  scroll-margin-top: 12px;
+  transition: background-color 0.3s;
+}
+@media (max-width: 899px) { .card { scroll-margin-top: calc(42vh + 12px); } }
+.card.is-active { background: var(--hl); border-color: var(--accent); }
+
+.card-top { display: flex; align-items: flex-start; gap: 8px; }
+.card-title {
+  flex: 1; text-align: left;
+  background: none; border: 0; padding: 4px 0; margin: 0;
+  font: inherit; font-size: 1.02rem; font-weight: 650; color: var(--text);
+  cursor: pointer; min-height: var(--tap);
+}
+.card-title:hover { color: var(--accent); }
+
+.star {
+  width: var(--tap); height: var(--tap); flex: none;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--bg); color: var(--muted);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.star[aria-pressed="true"] { color: var(--star); border-color: var(--star); }
+
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.badge {
+  font-size: 0.75rem; font-weight: 650;
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--text);
+}
+.badge.tier { color: #fff; border: 0; }
+.badge.pick { background: var(--bg); }
+
+.addr { margin: 0 0 8px; color: var(--muted); font-size: 0.9rem; }
+
+.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 0.9rem; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.facts .sub { color: var(--muted); font-size: 0.82rem; }
+
+.nc { color: var(--muted); font-style: italic; }
+
+.missing { margin: 10px 0 0; font-size: 0.9rem; }
+.missing strong { color: var(--route); }
+
+.card-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+  margin-top: 10px; font-size: 0.85rem; color: var(--muted);
+}
+.card-foot a { display: inline-flex; align-items: center; min-height: var(--tap); }
+
+.site-foot { margin-top: 20px; font-size: 0.8rem; color: var(--muted); }
+
+/* Map pins. The tap area is the 44 px circle around the dot; pins closer than
+   44 px are merged into one group pin, so tap areas never overlap. */
+.pin { background: none; border: 0; border-radius: 50%; }
+.pin-shape.group {
+  background: var(--group); color: var(--surface);
+  border-color: var(--group-ring);
+  box-shadow: 0 0 0 3px var(--group), 0 1px 5px rgba(0,0,0,0.5);
+}
+.pin-shape.is-gone { opacity: 0.6; }
+.pin-shape {
+  position: absolute; left: 50%; top: 50%;
+  width: 28px; height: 28px; margin: -14px 0 0 -14px;
+  display: grid; place-items: center;
+  border-radius: 50%; border: 2px solid #fff;
+  color: #fff; font: 700 13px/1 system-ui, sans-serif;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+}
+.pin-shape.sale { border-radius: 4px; }
+.pin-shape.is-starred::after {
+  content: "★"; position: absolute; top: -9px; right: -9px;
+  font-size: 13px; color: var(--star); text-shadow: 0 0 2px #000;
+}
+.pin.is-active .pin-shape { transform: scale(1.25); border-color: #000; }
+.pin:focus-visible { outline: none; }
+.pin:focus-visible .pin-shape { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.stop-label { font-size: 0.8rem; }
+
+/* Bigger Leaflet controls for touch */
+.leaflet-touch .leaflet-bar a, .leaflet-bar a { width: var(--tap); height: var(--tap); line-height: var(--tap); }
+/* Map credit: solid box so its contrast does not depend on the tiles behind it.
+   Selectors match Leaflet's own (.leaflet-container ...) so these win in both modes. */
+.leaflet-container .leaflet-control-attribution {
+  background: var(--surface); color: var(--text);
+  font-size: 12px; padding: 1px 6px;
+}
+.leaflet-container .leaflet-control-attribution a { color: var(--accent); }
+@media (prefers-color-scheme: dark) {
+  .leaflet-bar a { background: #2a2a2e; color: #eee; }
+  .leaflet-container .leaflet-popup-content-wrapper,
+  .leaflet-container .leaflet-popup-tip,
+  .leaflet-tooltip { background: #2a2a2e; color: #eee; }
+  .leaflet-container a.leaflet-popup-close-button { color: #ccc; }
+}
+
+/* Chooser for grouped pins */
+.chooser { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; min-width: 200px; }
+.chooser-title { margin: 0 0 6px; font-weight: 650; font-size: 0.9rem; }
+.chooser button {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  min-height: var(--tap); padding: 4px 8px; text-align: left;
+  font: inherit; font-size: 0.9rem; color: inherit;
+  background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+}
+.chooser button:hover { border-color: var(--accent); }
+.chooser .pin-demo { flex: none; }
+.chooser .gone-tag { color: var(--muted); font-size: 0.8rem; }
+.chooser-zoom { width: 100%; justify-content: center; margin-top: 6px; }
+.chooser-popup .leaflet-popup-content { margin: 10px 12px; }
+
+/* Card extras */
+.note { margin: 0 0 8px; font-size: 0.92rem; }
+.gone-line { margin: 0 0 8px; font-weight: 650; color: var(--gone); font-size: 0.9rem; }
+.est { color: var(--muted); font-size: 0.82rem; }
+.card.is-gone { border-style: dashed; }
+
+/* Stop list */
+.stops { margin: 0 0 10px; }
+.stops summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--text); }
+.stop-list { margin: 0; padding-left: 20px; columns: 2; column-gap: 16px; }
+.stop-list li { break-inside: avoid; margin-bottom: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Omaha rentals: Old Market, downtown and nearby</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#list">Skip to the list</a>
+
+  <header class="site-head">
+    <h1>Omaha rentals: Old Market, downtown and nearby</h1>
+    <p class="lede">Places to rent in central Omaha, with the planned streetcar line for reference.</p>
+    <p class="meta" id="streetcar-line">Loading…</p>
+    <p class="meta" id="checked-line"></p>
+  </header>
+
+  <main class="app">
+    <section class="list-pane" id="list" aria-label="Places" tabindex="-1">
+      <details class="filters" id="filters">
+        <summary>Filters and sort</summary>
+        <form id="filter-form" novalidate>
+          <fieldset>
+            <legend>Tier</legend>
+            <div id="tier-boxes" class="box-row"></div>
+          </fieldset>
+
+          <div class="field">
+            <label for="f-area">Area</label>
+            <select id="f-area"><option value="">Any area</option></select>
+          </div>
+
+          <div class="field">
+            <label for="f-cost">All-in cost: <output id="f-cost-out" for="f-cost">Any</output></label>
+            <input type="range" id="f-cost" min="0" max="0" step="1">
+            <label class="check">
+              <input type="checkbox" id="f-cost-unknown" checked>
+              <span>Include places where the all-in is not confirmed</span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="f-lease">Shortest lease</label>
+            <select id="f-lease">
+              <option value="">Any</option>
+              <option value="3">3 months or less</option>
+              <option value="6">6 months or less</option>
+              <option value="12">12 months or less</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="f-parking">Parking</label>
+            <select id="f-parking">
+              <option value="">Any</option>
+              <option value="one">Cost for one car confirmed</option>
+              <option value="two">Cost for two cars confirmed</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="f-cat">Cat allowed</label>
+            <select id="f-cat">
+              <option value="">Any</option>
+              <option value="yes-likely">Yes or likely</option>
+              <option value="yes">Yes, confirmed</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="f-walk">Walk to a stop: <output id="f-walk-out" for="f-walk">Any</output></label>
+            <input type="range" id="f-walk" min="0" max="0" step="1">
+          </div>
+
+          <div class="field">
+            <label for="f-picked">Picked by</label>
+            <select id="f-picked">
+              <option value="">Anyone or no one</option>
+              <option value="M">M</option>
+              <option value="G">G</option>
+            </select>
+          </div>
+
+          <div class="box-row">
+            <label class="check">
+              <input type="checkbox" id="f-laundry">
+              <span>In-unit laundry</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="f-short">
+              <span>Shortlist only</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="f-gone">
+              <span>Hide gone listings</span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="f-sort">Sort by</label>
+            <select id="f-sort">
+              <option value="area">Area (Old Market first), then cost</option>
+              <option value="tier">Tier</option>
+              <option value="cost">All-in cost per person</option>
+              <option value="walk">Walk time to a stop</option>
+            </select>
+          </div>
+
+          <button type="button" class="btn" id="reset-btn">Reset filters</button>
+        </form>
+      </details>
+
+      <p class="count" id="count" role="status" aria-live="polite"></p>
+
+      <div class="legend" aria-label="Pin key">
+        <span class="key"><span class="pin-demo t1" aria-hidden="true">1</span> Tier 1</span>
+        <span class="key"><span class="pin-demo t2" aria-hidden="true">2</span> Tier 2</span>
+        <span class="key"><span class="pin-demo t3" aria-hidden="true">3</span> Tier 3</span>
+        <span class="key"><span class="pin-demo tx" aria-hidden="true">X</span> Excluded</span>
+        <span class="key"><span class="pin-demo sale ts" aria-hidden="true">S</span> For sale (square)</span>
+        <span class="key"><span class="pin-demo group" aria-hidden="true">2</span> Places too close to tell apart: tap to choose</span>
+        <span class="key"><span class="line-demo" aria-hidden="true"></span> Streetcar (schematic)</span>
+      </div>
+
+      <div id="empty" class="empty" hidden>
+        <p>No places match these filters.</p>
+        <button type="button" class="btn" id="empty-reset">Reset filters</button>
+      </div>
+
+      <ol id="cards" class="cards"></ol>
+
+      <footer class="site-foot">
+        <details class="stops">
+          <summary id="stops-summary">Streetcar stops</summary>
+          <ol id="stop-list" class="stop-list"></ol>
+        </details>
+        <p id="route-note"></p>
+        <p>Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>.
+           <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener">Report a map issue</a>.</p>
+        <p>The shortlist is saved in this browser only.</p>
+      </footer>
+    </section>
+
+    <section class="map-pane" aria-label="Map">
+      <div id="map" role="region" aria-label="Map of places and streetcar stops"></div>
+      <div class="map-tools">
+        <label class="chip">
+          <input type="checkbox" id="rings-toggle" checked>
+          <span>Walk rings (5 and 10 min)</span>
+        </label>
+        <button type="button" class="chip" id="fit-btn">Show all pins</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="vendor/leaflet/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="></script>
+  <script src="app.js"></script>
+</body>
+</html>
