@@ -136,6 +136,12 @@
     if (/^no/.test(c)) return "no";
     return "unknown";
   }
+  // "Yes, confirmed": the value starts with "yes" and says nothing about being likely,
+  // needing confirmation, or conflicting sources.
+  function catConfirmed(p) {
+    var c = String(p.cat_allowed || "").toLowerCase();
+    return /^yes/.test(c) && !/likely|confirm|conflict/.test(c);
+  }
   function hasInUnitLaundry(p) { return /^in-unit/i.test(String(p.laundry || "")); }
 
   // The listed monthly price: the low end of the rent, or the high end if only that is known.
@@ -476,7 +482,7 @@
     if (f.lease !== null && !(isNum(p.shortest_lease_months) && p.shortest_lease_months <= f.lease)) return false;
     if (f.parking === "one" && !isNum(p.parking_cost_one)) return false;
     if (f.parking === "two" && !isNum(p.parking_cost_two)) return false;
-    if (f.cat === "yes" && catStatus(p) !== "yes") return false;
+    if (f.cat === "yes" && !catConfirmed(p)) return false;
     if (f.cat === "yes-likely" && catStatus(p) !== "yes" && catStatus(p) !== "likely") return false;
     if (f.walkMax !== null && !(isNum(p.walk_minutes) && p.walk_minutes <= f.walkMax)) return false;
     if (f.laundry && !hasInUnitLaundry(p)) return false;
